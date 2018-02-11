@@ -8,7 +8,7 @@ Description: Load SportsCode XML Edit file into an data frame for analysis
 License: MIT
 Encoding: UTF-8
 LazyData: true
-Imports: 
+Depends: 
     tidyverse (>= 1.1.1),
     xml2 (>= 1.1.1),
     reshape2  (>= 1.4.1),

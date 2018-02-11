@@ -1,22 +1,22 @@
+library(tidyverse)
+library(xml2)
+library(reshape2)
+
 #' @title Analyse Hudl SportsCode data in R
 #'
 #' @description Load SportsCode XML Edit file into a tibble for analysis
 #' @param path Path to SportsCode XML file
-#' @param format Choose either long, tidy or matrix Format
+#' @param format Choose either long, tidy, matrix or matrix_group Format
 #' "Long Format" returns a data frame with a row per code & label group combination
 #' "Tidy Format" returns a data frame with a single row per code instance (tag) and corresponding labels as columns
-#' "Matrix" is a summary format returning a single row per code, with counts of corresponding labels (Based on the sportscode matrix)
+#' "Matrix" is a summary format returning a single row per code, with counts of corresponding groups & labels (Based on the sportscode matrix)
+#' "Matrix Group" is a summary format returning a single row per code, with counts of corresponding groups only (Based on the sportscode matrix)
 #' @return A data.frame
 #' @examples
 #' read_sportscode_xml('Sportscode-edit-file.xml')
 #' read_sportscode_xml('Sportscode-edit-file.xml', 'long')
 #' read_sportscode_xml('Sportscode-edit-file.xml', 'tidy')
 #' read_sportscode_xml('Sportscode-edit-file.xml', 'matrix')
-
-library(tidyverse)
-library(xml2)
-library(reshape2)
-
 #' @export
 read_sportscode_xml <- function(sportscode_xml_file_path, format = "long") {
 
