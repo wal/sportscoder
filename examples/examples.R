@@ -19,3 +19,7 @@ matrix_format_dt %>% select(code, `Aerial Outcome  :  Successful`, `GSO  :  On T
 # Matrix group format
 matrix_group_format_dt <- read_sportscode_xml("examples/XML Edit list.xml", format = "matrix_group")
 matrix_group_format_dt %>% head()
+
+
+
+

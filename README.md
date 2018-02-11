@@ -1,7 +1,7 @@
 ![](https://static.hudl.com/craft/logos/logo-sportscode.png?mtime=20160303123643)
 
 # sportscoder
-A library for loading Hudl SportsCode data into an R data frame for analysis
+An R library for loading Hudl SportsCode data into an R data frame for analysis
 
 ## Installation
 
