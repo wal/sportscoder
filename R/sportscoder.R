@@ -13,11 +13,11 @@
 #' read_sportscode_xml('Sportscode-edit-file.xml', 'tidy')
 #' read_sportscode_xml('Sportscode-edit-file.xml', 'matrix')
 
-library(magrittr)
-library(purr)
+library(tidyverse)
 library(xml2)
 library(reshape2)
 
+#' @export
 read_sportscode_xml <- function(sportscode_xml_file_path, format = "long") {
 
   instances <- read_xml(sportscode_xml_file_path) %>% xml_find_all(".//instance")
@@ -46,8 +46,15 @@ read_sportscode_xml <- function(sportscode_xml_file_path, format = "long") {
   df$label_group <- factor(df$label_group)
   df$label_text <- factor(df$label_text)
 
-  switch(format,
-         long = df,
-         tidy = df %>% dcast(id + start + end + code ~ label_group),
-         matrix = df %>% dcast(code ~ label_group, length))
+  if(format == "long") {
+    return(df)
+  } else if(format == "tidy") {
+    return(df %>% dcast(id + start + end + code ~ label_group, value.var = "label_text"))
+  } else if (format == "matrix") {
+    return(df %>% dcast(code ~ paste(label_group, " : ", label_text), value.var = "label_text", length))
+  } else if (format == "matrix_group") {
+    return(df %>% dcast(code ~ label_group, value.var = "label_text", length))
+  } else {
+    stop(paste("ERROR: Unknown format: ", format))
+  }
 }
