@@ -1,60 +1,95 @@
 library(tidyverse)
 library(xml2)
 library(reshape2)
+library(furrr)
 
 #' @title Analyse Hudl SportsCode data in R
 #'
 #' @description Load SportsCode XML Edit file into a tibble for analysis
 #' @param path Path to SportsCode XML file
-#' @param format Choose either long, tidy, matrix or matrix_group Format
-#' "Long Format" returns a data frame with a row per code & label group combination
-#' "Tidy Format" returns a data frame with a single row per code instance (tag) and corresponding labels as columns
-#' "Matrix" is a summary format returning a single row per code, with counts of corresponding groups & labels (Based on the sportscode matrix)
-#' "Matrix Group" is a summary format returning a single row per code, with counts of corresponding groups only (Based on the sportscode matrix)
 #' @return A data.frame
 #' @examples
 #' read_sportscode_xml('Sportscode-edit-file.xml')
-#' read_sportscode_xml('Sportscode-edit-file.xml', 'long')
-#' read_sportscode_xml('Sportscode-edit-file.xml', 'tidy')
-#' read_sportscode_xml('Sportscode-edit-file.xml', 'matrix')
 #' @export
-read_sportscode_xml <- function(sportscode_xml_file_path, format = "long") {
+read_sportscode_xml <- function(xml_file_path) {
 
-  instances <- read_xml(sportscode_xml_file_path) %>% xml_find_all(".//instance")
 
-  df <- instances %>% map_df(function(instance) {
+  # Retrieve instances from XML
+  instances <- read_xml(xml_file_path) %>% xml_find_all(".//instance")
+
+  # Iterate over the instances from the xml and create a data_frame of one row per instance,
+  df <- instances %>% future_map_dfr(function(instance) {
+
     instance_id <- xml_child(instance, 'ID') %>% xml_text() %>% as.numeric()
     instance_start <- xml_child(instance, 'start') %>% xml_text() %>% as.numeric()
     instance_end <- xml_child(instance, 'end') %>% xml_text() %>% as.numeric()
     instance_code <- xml_child(instance, 'code') %>% xml_text()
 
-    instance_labels_groups <- instance %>% xml_find_all(".//label/group") %>% xml_text()
-    instance_labels_text <- instance %>% xml_find_all(".//label/text") %>% xml_text()
+    # A data frame representing just this instance (will only have a single row)
+    instance_df <- data_frame(id = instance_id,
+                              code = instance_code,
+                              start =instance_start,
+                              end = instance_end,
+                              other = NA)
 
-    labels_df = data_frame(group = instance_labels_groups, text = instance_labels_text)
-    labels_df <- unique(labels_df)
+    labels_with_a_group_nodes <- instance %>% xml_find_all("label[group]")
 
-    data_frame(id = instance_id,
-               start =instance_start,
-               end = instance_end,
-               code = instance_code,
-               label_group = labels_df$group,
-               label_text = labels_df$text)
+    # Add all labels with groups to a column in the dataframe. If multiple labels are present
+    # they will be joined together into a single string (e.g Puckouts = "PO Won,Clean")
+
+    if(length(labels_with_a_group_nodes) > 0) {
+
+      # Convert labels into a data_frame
+      labels_df <- labels_with_a_group_nodes %>% map_df(function(label_node) {
+        group <- label_node %>% xml_find_first('group') %>% xml_text() %>% make.names()
+        text <- label_node %>% xml_find_first('text') %>% xml_text() %>% head(1)
+        data_frame(group, text)
+      })
+
+
+      labels_df <-
+        labels_df %>%
+        group_by(group) %>%
+        summarise(labels = paste0(unique(text), collapse = ",")) %>%
+        spread(group, labels)
+
+      # bind the labels onto the instance data frame
+      instance_df <- cbind(instance_df, labels_df)
+    }
+
+
+    # Add all labels without groups to a single column called other in the dataframe. If multiple labels are present
+    # they will be joined together into a single string (e.g other = "Own Third,Opp Third,reset clock,Middle Third")
+    labels_without_a_group_nodes <- instance %>% xml_find_all("label[not(group)]")
+
+    if(length(labels_without_a_group_nodes) > 0) {
+
+      labels_df <- labels_without_a_group_nodes %>% map_df(function(label_node) {
+        group <- "other"
+        text <- label_node %>% xml_find_first('text') %>% xml_text() %>% head(1)
+
+        data_frame(group, text)
+      })
+
+      labels_df <-
+        labels_df %>%
+        group_by(group) %>%
+        summarise(labels = paste0(unique(text), collapse = ",")) %>%
+        spread(group, labels)
+
+      # bind the labels onto the instance data frame
+      instance_df <- cbind(instance_df, labels_df)
+    }
+
+
+    # The (single row) data frame representing just this instance
+    instance_df
   })
 
-  df$code <- factor(df$code)
-  df$label_group <- factor(df$label_group)
-  df$label_text <- factor(df$label_text)
+  # map_df merges all of the instance_df data frames into a single big data frame (codes)
 
-  if(format == "long") {
-    return(df)
-  } else if(format == "tidy") {
-    return(df %>% dcast(id + start + end + code ~ label_group, value.var = "label_text"))
-  } else if (format == "matrix") {
-    return(df %>% dcast(code ~ paste(label_group, " : ", label_text), value.var = "label_text", length))
-  } else if (format == "matrix_group") {
-    return(df %>% dcast(code ~ label_group, value.var = "label_text", length))
-  } else {
-    stop(paste("ERROR: Unknown format: ", format))
-  }
+  glimpse(df)
+
+  df$code <- factor(df$code)
+  return(df)
 }
