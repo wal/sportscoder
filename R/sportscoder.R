@@ -2,6 +2,7 @@ library(tidyverse)
 library(xml2)
 library(reshape2)
 library(furrr)
+library(forcats)
 
 #' @title Analyse Hudl SportsCode data in R
 #'
@@ -86,10 +87,5 @@ read_sportscode_xml <- function(xml_file_path) {
     instance_df
   })
 
-  # map_df merges all of the instance_df data frames into a single big data frame (codes)
-
-  glimpse(df)
-
-  df$code <- factor(df$code)
-  return(df)
+ return(df %>% mutate_if(is.character, as.factor))
 }
