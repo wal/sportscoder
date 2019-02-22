@@ -4,6 +4,8 @@ library(reshape2)
 library(furrr)
 library(forcats)
 
+plan(multiprocess)
+
 #' @title Analyse Hudl SportsCode data in R
 #'
 #' @description Load SportsCode XML Edit file into a tibble for analysis
