@@ -1,7 +1,7 @@
 Package: sportscoder
 Type: Package
 Title: Analyse Hudl SportsCode data in R
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: person("Wal", "McConnell", , "wal@backfour.com", role = c("aut", "cre"))
 Maintainer: Wal McConnell <wal@backfour.com>
 Description: Load SportsCode XML Edit file into an data frame for analysis
