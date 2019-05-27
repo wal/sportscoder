@@ -18,7 +18,7 @@ read_sportscode_xml <- function(xml_file_path) {
 
 
   # Retrieve instances from XML
-  instances <- read_xml(paste(rawToChar(read_file_raw(xml_file_path), multiple = TRUE), collapse = "")) %>% xml_find_all(".//instance")
+  instances <- read_xml(file(xml_file_path)) %>% xml_find_all(".//instance")
 
   # Iterate over the instances from the xml and create a data_frame of one row per instance,
   df <- instances %>% future_map_dfr(function(instance) {
